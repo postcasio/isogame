@@ -1,0 +1,40 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "Test",
+  "main": "index.js",
+  "dependencies": {
+    "ammo.js": "github:kripken/ammo.js",
+    "core-js": "^3.7.0",
+    "js-base64": "^3.6.0",
+    "parse-bmfont-ascii": "^1.0.6",
+    "three": "^0.116.1",
+    "threejs-csg": "github:postcasio/threejs-csg"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.6.0",
+    "@typescript-eslint/parser": "^4.6.0",
+    "eslint": "^7.12.1",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "prettier": "^2.1.2",
+    "typescript": "^4.0.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rebuild": "npm run clean && npm run build",
+    "build": "tsc && npm run copy:assets && npm run install:modules",
+    "watch": "tsc --watch",
+    "start": "./bin/spherun dist",
+    "clean": "rm -rf dist dist.zip",
+    "lint": "tslint --project .",
+    "lint:fix": "tslint --project . --fix",
+    "copy:assets": "cp -R static/ dist/",
+    "install:modules": "cp package.json dist && npm install --no-bin-links --only=prod --prefix=dist && mv dist/node_modules dist/lib",
+    "dist": "npm run rebuild && npm run tidydist && npm run bundle",
+    "bundle": "zip -r dist.zip dist/*",
+    "tidydist": "rm -rf dist/lib/three/examples dist/lib/three/src dist/lib/ammo.js/bullet dist/lib/ammo.js/examples dist/meshes/*.blend*"
+  },
+  "author": "",
+  "license": "ISC"
+}

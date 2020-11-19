@@ -1,0 +1,10 @@
+{
+	"version": 2,
+	"apiLevel": 1,
+	"name": "sphere",
+	"author": "",
+	"summary": "",
+	"resolution": "1920x1080",
+	"main": "@/game/index.js",
+	"saveID": "casiotone.isogame"
+}
