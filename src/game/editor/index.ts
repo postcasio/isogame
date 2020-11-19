@@ -166,7 +166,7 @@ export class Editor {
         0,
         0,
         Surface.Screen.width,
-        48,
+        64,
         this.dropdownOffset(0, 0),
         {
           editor: this,
