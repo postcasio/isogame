@@ -145,7 +145,11 @@ export class GUI {
   private clipRects: ClipRect[] = [];
   private mouseEvents: MouseEvents = new MouseEvents();
 
-  private textSurface: Surface = new Surface(1024, 1024, Color.Black);
+  private textSurface: Surface = new Surface(
+    Surface.Screen.width,
+    Surface.Screen.height,
+    Color.Black
+  );
 
   private dropdownCallback: DropdownCallback<unknown>;
   private canAcceptInput = false;
