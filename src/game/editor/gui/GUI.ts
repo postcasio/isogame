@@ -592,7 +592,14 @@ export class GUI {
           }
         }
 
-        if (this.mouseClicked(handleX, y, handleW, h)) {
+        if (
+          this.mouseClicked(
+            handleX - this.style.padding.medium,
+            y,
+            handleW + this.style.padding.medium * 2,
+            h
+          )
+        ) {
           this.focusControl(id);
           state.scrollY =
             (Math.min(
