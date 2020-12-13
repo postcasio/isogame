@@ -2,11 +2,13 @@
 precision mediump float;
 #endif
 
+#extension GL_OES_standard_derivatives : enable
+
 #define MAX_POINT_LIGHTS 4
 #define MAX_DIR_LIGHTS 4
 #define PCF
 #define WITH_NORMALMAP_UNSIGNED
-
+// #define WITH_NORMALMAP_GREEN_UP
 #define AMBIENT_LIGHT 0.1
 
 // struct PointLight {
@@ -86,8 +88,8 @@ vec3 normalMapLookup(vec2 coords) {
 	return material_use_normal ? texture2D(material_normal, fract(coords * material.uvScale)).xyz : vec3(1.0);
 }
 
-vec3 diffuseMapLookup(vec2 coords) {
-	return al_use_tex ? texture2D(al_tex, fract(coords * material.uvScale)).xyz : material.color;
+vec4 diffuseMapLookup(vec2 coords) {
+	return al_use_tex ? texture2D(al_tex, fract(coords * material.uvScale)) : vec4(material.color, 1.0);
 }
 
 mat3 cotangent_frame( vec3 N, vec3 p, vec2 uv ) {
@@ -134,7 +136,7 @@ float ShadowCalculation(int lightIndex, vec3 normal, vec3 lightDir)
 	float currentDepth = projCoords.z;
 
 #ifdef PCF
-	float bias = max(0.003 * (1.0 - dot(normal, lightDir)), 0.003);
+	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0011);
 	float shadow = 0.0;
 	vec2 texelSize = 1.0 / vec2(shadowMapSize);
 
@@ -190,7 +192,7 @@ float ShadowCalculation(int lightIndex, vec3 normal, vec3 lightDir)
 
 vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 fragPos) {
 	vec3 viewDir = normalize(viewPos - fragPos);
-	normal = perturb_normal(normal, viewDir, varying_texcoord * material.uvScale);
+	normal = perturb_normal(normal, viewDir, varying_texcoord);
 	float ambientStrength = AMBIENT_LIGHT;
 	vec3 color = light.color * light.intensity;
     vec3 ambient = ambientStrength * color;
@@ -210,7 +212,7 @@ vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 fragPos
 	float shadow = 0.0;
 
 	shadow = ShadowCalculation(light.lightIndex, normal, lightDir);
-    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * diffuseMapLookup(varying_texcoord);
+    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * diffuseMapLookup(varying_texcoord).xyz;
 
 	// return (light.lightSpaceMatrix * vec4(varying_fragpos, 1.0)).xyz;
 	return lighting;
@@ -252,7 +254,7 @@ void main() {
 		gl_FragColor = mix(gl_FragColor, editorSelected ? vec4(1.0, 1.0, 0.3, 1.0) : vec4(0.5, 0.5, 0.5, 1.0), 1.0 - min(line, 1.0));
 	}
 
-	gl_FragColor.w = material.opacity;
+	gl_FragColor.w = diffuseMapLookup(varying_texcoord).w * material.opacity;
 
 	// gl_FragColor = texture2D(material_specular, varying_texcoord);
 }

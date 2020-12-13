@@ -45,6 +45,12 @@ export class LevelLight implements LevelObject {
       position: [this.x, this.y, this.z],
       color: [this.color.r, this.color.g, this.color.b],
       intensity: this.intensity,
+      camera: {
+        id: this.id + ".camera",
+        name: this.name + " [Camera]",
+        position: [this.x, this.y.this.z],
+        rotation: [this.cam],
+      },
     };
   }
 
@@ -121,10 +127,10 @@ export class LevelLight implements LevelObject {
 
   createLight(): DirectionalLight {
     const aspect = 1;
-    const near = 5; // the near clipping plane
-    const far = 100; // the far clipping plane
+    const near = 0.0001; // the near clipping plane
+    const far = 20; // the far clipping plane
 
-    const d = 20;
+    const d = 5;
     const orthoCamera = new OrthographicCamera(
       -d * aspect,
       d * aspect,

@@ -76,14 +76,15 @@ export default class SphereRenderer implements Renderer {
   private info: WebGLInfo = new WebGLInfo(null);
   private currentArrayCamera?: ArrayCamera;
   private repository = new ModelRepository();
-  private shadowMapShader = new Shader({
-    fragmentFile: "@/shaders/shadow.frag",
-    vertexFile: "@/shaders/shadow.vert",
+  private zbufferShader = new Shader({
+    fragmentFile: "@/shaders/zbuffer.frag",
+    vertexFile: "@/shaders/zbuffer.vert",
   });
+  zbuffer: Surface;
   private shadowMapMaterial = new ShadowMapMaterial();
 
   private target: Surface = Surface.Screen;
-  private shadowMapSize = 2048;
+  private shadowMapSize = 1024;
   private emptyShadowMap = new Surface(
     this.shadowMapSize,
     this.shadowMapSize,
@@ -101,13 +102,13 @@ export default class SphereRenderer implements Renderer {
     let shadowMap = this.shadowMaps.get(light);
 
     if (!shadowMap) {
-      shadowMap = new Surface(
-        this.shadowMapSize,
-        this.shadowMapSize,
-        Color.Black
-      );
-      shadowMap.depthOp = DepthOp.LessOrEqual;
+      shadowMap = new Surface(this.shadowMapSize, this.shadowMapSize, {
+        color: Color.Black,
+        pixelFormat: PixelFormat.ABGR_F32,
+      });
+      shadowMap.depthOp = DepthOp.Less;
       shadowMap.blendOp = BlendOp.Replace;
+      shadowMap.cullFace = CullFace.None;
 
       this.shadowMaps.set(light, shadowMap);
     }
@@ -127,7 +128,15 @@ export default class SphereRenderer implements Renderer {
     return lightSpaceMatrix;
   }
 
-  constructor() {}
+  constructor() {
+    this.zbuffer = new Surface(Surface.Screen.width, Surface.Screen.height, {
+      color: Color.Black,
+      pixelFormat: PixelFormat.ABGR_F32,
+    });
+    this.zbuffer.blendOp = BlendOp.Replace;
+    this.zbuffer.depthOp = DepthOp.LessOrEqual;
+    this.zbuffer.cullFace = CullFace.Back;
+  }
 
   setShadowMapSize(size: number) {
     this.shadowMapSize = size;
@@ -228,6 +237,21 @@ export default class SphereRenderer implements Renderer {
       this.renderObjects(opaqueObjects, scene, camera);
     if (transparentObjects.length > 0)
       this.renderObjects(transparentObjects, scene, camera);
+
+    const prevTarget = this.target;
+
+    this.target = this.zbuffer;
+    this.target.clear(Color.Black, 1.0);
+    scene.overrideMaterial = this.shadowMapMaterial;
+
+    if (opaqueObjects.length > 0)
+      this.renderObjects(opaqueObjects, scene, camera);
+    if (transparentObjects.length > 0)
+      this.renderObjects(transparentObjects, scene, camera);
+
+    scene.overrideMaterial = null;
+
+    this.target = prevTarget;
 
     this.currentRenderList = undefined;
     this.currentRenderState = undefined;
@@ -559,7 +583,7 @@ export default class SphereRenderer implements Renderer {
 
     const previousShader = model.shader;
 
-    model.shader = this.shadowMapShader;
+    model.shader = this.zbufferShader;
 
     setTransformFromMatrix(transform, this.lightSpaceMatrix);
     model.shader.setMatrix("projection", transform);

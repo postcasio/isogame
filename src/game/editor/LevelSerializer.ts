@@ -10,6 +10,16 @@ export interface SerializedLevelObjectError {
   type: "None";
 }
 
+export interface SerializedOrthographicCamera {
+  type: "OrthographicCamera";
+  id: string;
+  name: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  near: number;
+  far: number;
+}
+
 export interface SerializedLevelBlock {
   type: "Block";
   id: string;

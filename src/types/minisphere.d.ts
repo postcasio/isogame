@@ -478,6 +478,12 @@ declare enum DepthOp {
   NotEqual,
 }
 
+declare enum PixelFormat {
+  ABGR_8888,
+  BGR_888,
+  ABGR_F32,
+}
+
 declare class BlendType {
   static readonly Add: BlendType;
   static readonly Subtract: BlendType;
@@ -1806,7 +1812,12 @@ declare class Surface extends Texture {
   constructor(
     width: number,
     height: number,
-    options?: { content?: ArrayBuffer; color?: Color; multisample?: number }
+    options?: {
+      content?: ArrayBuffer;
+      color?: Color;
+      multisample?: number;
+      pixelFormat?: PixelFormat;
+    }
   );
 
   /**

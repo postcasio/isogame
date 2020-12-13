@@ -69,6 +69,13 @@ export class Editor {
   renderer: SphereRenderer;
   raycaster: Raycaster;
   buffer: Surface;
+  postBuffer: Surface;
+  postModel: Model;
+  postShape: Shape;
+  postShader: Shader = new Shader({
+    vertexFile: "@/shaders/post.vert",
+    fragmentFile: "@/shaders/post.frag",
+  });
 
   mousePosition: Vector2 = new Vector2();
   hover?: LevelObject;
@@ -78,7 +85,7 @@ export class Editor {
   cameraTween?: Tween<Vector3>;
   cameraFocus?: Vector3;
   cameraPositionIndex = 0;
-  cameraDistance = 8;
+  cameraDistance = 3;
   cameraPositions = [
     [1, 1, 1],
     [1, 1, -1],
@@ -94,8 +101,31 @@ export class Editor {
   constructor() {
     SSj.log("making buffer");
     this.buffer = new Surface(Surface.Screen.width, Surface.Screen.height, {
-      multisample: 8,
+      multisample: 4,
     });
+    this.postBuffer = new Surface(Surface.Screen.width, Surface.Screen.height, {
+      multisample: 4,
+    });
+
+    this.postShape = new Shape(
+      ShapeType.TriStrip,
+      null,
+      new VertexList([
+        { x: 0, y: 0, u: 0, v: 1, color: Color.White },
+        { x: Surface.Screen.width, y: 0, u: 1, v: 1, color: Color.White },
+        { x: 0, y: Surface.Screen.height, u: 0, v: 0, color: Color.White },
+        {
+          x: Surface.Screen.width,
+          y: Surface.Screen.height,
+          u: 1,
+          v: 0,
+          color: Color.White,
+        },
+      ])
+    );
+    this.postModel = new Model([this.postShape], this.postShader);
+
+    this.buffer.cullFace = CullFace.Back;
     SSj.log("ok");
     this.scene = new Scene();
     this.cameraFocus = new Vector3(0, 0, 0);
@@ -151,7 +181,7 @@ export class Editor {
     this.addPanel(
       new SidePanel(
         Surface.Screen.width - panelWidth,
-        48,
+        64,
         panelWidth,
         Surface.Screen.height - 48,
         this.dropdownOffset(Surface.Screen.width - panelWidth, 48),
@@ -175,36 +205,38 @@ export class Editor {
     );
 
     const loader = new OBJLoader();
-    loader.load("@/meshes/pillar3.obj", (obj: Mesh) => {
+    loader.load("@/meshes/room.obj", (obj: Mesh) => {
       SSj.log("got object");
+      for (const child of obj.children) {
+        const mesh = new LevelMesh({
+          type: "custom",
+          data: child.geometry,
+        });
+        mesh.getInternal().material.normalMap = undefined;
+        mesh.getInternal().material.texture = new Texture(
+          "@/palettes/pear.png"
+        );
+        mesh.getInternal().material.specularMap = undefined;
+        // mesh.getInternal().material.transparent = true;
+        // mesh.getInternal().scale.set(3, 3, 3);
 
-      const mesh = new LevelMesh({
-        type: "custom",
-        data: obj.children[0].geometry,
-      });
-      mesh.getInternal().material.normalMap = new Texture(
-        "@/meshes/pillar3.normal.png"
-      );
-      mesh.getInternal().material.texture = new Texture("@/meshes/marble.jpg");
-      mesh.getInternal().material.specularMap = undefined;
+        this.addObject(mesh);
+      }
+      // const floor = new LevelMesh({
+      //   type: "box",
+      //   width: 21,
+      //   height: 1,
+      //   depth: 21,
+      // });
 
-      this.addObject(mesh);
+      // floor.getInternal().position.set(0, -6.5, 0);
+      // floor.getInternal().material.normalMap = new Texture(
+      //   "@/circles_normal.png"
+      // );
+      // floor.getInternal().material.texture = new Texture("@/meshes/marble.jpg");
+      // floor.getInternal().material.specularMap = undefined;
 
-      const floor = new LevelMesh({
-        type: "box",
-        width: 21,
-        height: 1,
-        depth: 21,
-      });
-
-      floor.getInternal().position.set(0, -3.5, 0);
-      floor.getInternal().material.normalMap = new Texture(
-        "@/circles_normal.png"
-      );
-      floor.getInternal().material.texture = new Texture("@/meshes/marble.jpg");
-      floor.getInternal().material.specularMap = undefined;
-
-      this.addObject(floor);
+      // this.addObject(floor);
     });
   }
 
@@ -217,7 +249,7 @@ export class Editor {
   }
 
   createDefaultLight() {
-    return new LevelLight(40, 30, 5);
+    return new LevelLight(4, 4, 4);
   }
 
   createDefaultBlock() {
@@ -411,6 +443,19 @@ export class Editor {
 
       this.buffer.clear(Color.Black, 1.0);
       this.renderer.render(this.scene, this.camera);
+
+      // this.postBuffer.clear(Color.Black, 1.0);
+      // this.postShape.texture = this.buffer;
+      // this.postModel.shader.setFloat("focusDepth", 1.3);
+      // this.postModel.shader.setFloatVector("texSize", [
+      //   this.renderer.zbuffer.width,
+      //   this.renderer.zbuffer.height,
+      // ]);
+      // this.postModel.shader.setSampler("zbuffer", this.renderer.zbuffer, 1);
+      // this.postModel.shader.setFloat("maxBlur", 20);
+      // this.postModel.shader.setFloat("aperture", 0.008);
+      // this.postModel.draw(Surface.Screen);
+
       Prim.blit(Surface.Screen, 0, 0, this.buffer);
 
       Surface.Screen.blendOp = BlendOp.Default;
@@ -436,11 +481,7 @@ export class Editor {
       );
 
       if (this.level.lights.length && Keyboard.Default.isPressed(Key.Space)) {
-        const light = this.level.lights[0];
-
-        const obj = light.getLight();
-
-        const shadowMap = this.renderer.getShadowMap(obj);
+        const shadowMap = this.renderer.zbuffer;
 
         if (shadowMap) {
           Surface.Screen.blendOp = BlendOp.Replace;

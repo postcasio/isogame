@@ -48,3 +48,25 @@ export function defaultSpecularTexture(width = 64, height = 64) {
 export interface Registration {
   remove: () => void;
 }
+
+export function drawTexture(
+  target: Surface,
+  texture: Texture,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  mask: Color = Color.White
+): void {
+  const u1 = 0;
+  const u2 = 1;
+  const v1 = 1;
+  const v2 = 0;
+
+  Shape.drawImmediate(target, ShapeType.TriStrip, texture, [
+    { x: x1, y: y1, u: u1, v: v1, color: mask },
+    { x: x2, y: y1, u: u2, v: v1, color: mask },
+    { x: x1, y: y2, u: u1, v: v2, color: mask },
+    { x: x2, y: y2, u: u2, v: v2, color: mask },
+  ]);
+}
